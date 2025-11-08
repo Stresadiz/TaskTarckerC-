@@ -19,6 +19,7 @@
 //task-cli list in-progress
 
 bool activeApp = true;
+int countTasks = 0;
 
 string[] states = new string[] {
     "todo", "in-progress", "done" };
@@ -68,7 +69,9 @@ string ReadLineInput() {
                 msg = argEx.Message;
             }
 
-            Console.WriteLine(msg);
+            Console.WriteLine($"Task correctly added : {msg} - ID: {countTasks} ");
+            countTasks++;
+
         }
     }
 
