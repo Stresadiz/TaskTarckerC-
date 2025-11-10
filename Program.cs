@@ -19,6 +19,8 @@
 //task-cli list in-progress
 
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 bool activeApp = true;
 
@@ -28,171 +30,197 @@ string[] states = new string[] {
     "todo", "in-progress", "done" };
 
 string[] commands = new string[] { 
-    "add", "list", "update", "delete", 
+    "add", "list", "update", "delete", "close", 
     "mark-in-progress", "mark-done" };
 
 /* Main application loop */
 
 while (activeApp) {
     ReadLineInput();
-    ReadLineInput();
-    ReadLineInput();
-
-    activeApp = false;
 }
 
-void ReadLineInput() { 
-    string input = Console.ReadLine();
+void ReadLineInput()
+{
+    string? input = Console.ReadLine();
 
-    input = input.Trim();
-    string command = input.Split(' ')[0].ToLower();
-
-    if (commands.Contains(command))
+    if (input != null)
     {
-        if (command == commands[0])
+        input = input.Trim();
+        string command = input.Split(' ')[0].ToLower();
+
+        if (commands.Contains(command))
         {
-            string title = input.Substring(command.Length).Trim();
-            string msg = "";
-
-            try
+            if (command == commands[0])
             {
-                if (string.IsNullOrWhiteSpace(title))
+                string title = input.Substring(command.Length).Trim();
+                string msg = "";
+
+                try
                 {
-                    throw new ArgumentNullException(nameof(title), "Task title cannot be empty.");
-                } 
-                else if (!title.StartsWith('"') && !title.EndsWith('"'))
-                {
-                    throw new ArgumentNullException(nameof(title), "Task title cannot start or ends without quotation marks");
+                    if (string.IsNullOrWhiteSpace(title))
+                    {
+                        throw new ArgumentNullException(nameof(title), "Task title cannot be empty.");
+                    }
+                    else if (!title.StartsWith('"') && !title.EndsWith('"'))
+                    {
+                        throw new ArgumentNullException(nameof(title), "Task title cannot start or ends without quotation marks");
+                    }
+                    else
+                    {
+                        msg = AddTask(title);
+                    }
                 }
-                else
+                catch (ArgumentNullException argEx)
                 {
-                    msg = AddTask(title);
+                    msg = argEx.Message;
+                }
+
+                Console.WriteLine($"Task correctly added : {msg} - ID: {GetNextId()} ");
+            }
+
+            if (command == commands[1])
+            {
+                string msg = "Listing tasks: \n";
+                string listResponse = "";
+                try
+                {
+                    if (input.Split(' ').Count() > 1)
+                    {
+                        throw new ArgumentOutOfRangeException("Listing by state not implemented yet.");
+                    }
+                    else
+                    {
+                        listResponse = ReturnList();
+                    }
+                }
+                catch (ArgumentOutOfRangeException exc)
+                {
+                    msg = exc.Message;
+                    return;
+
+                }
+                finally
+                {
+                    Console.WriteLine(msg);
+
+                    if (listResponse != string.Empty)
+                    {
+                        Console.WriteLine(listResponse);
+                    }
                 }
             }
-            catch (ArgumentNullException argEx)
+
+            if (command == commands[2])
             {
-                msg = argEx.Message;
+                Console.WriteLine("Update task not implemented yet.");
             }
 
-            Console.WriteLine($"Task correctly added : {msg} - ID: {GetNextId()} ");
-        }
-
-        if (command == commands[1])
-        {
-            string msg = "Listing tasks: \n";
-            string listResponse = "";
-            try
+            if (command == commands[3])
             {
-                if (input.Split(' ').Count() > 1)
-                {
-                    throw new ArgumentOutOfRangeException("Listing by state not implemented yet.");
-                }
-                else { 
-                    listResponse = ReturnList();
-                }
+                Console.WriteLine("Delete task not implemented yet.");
             }
-            catch (ArgumentOutOfRangeException exc)
-            {
-                msg = exc.Message;
-                return;
 
-            } finally
+            if (command == commands[4])
             {
-                Console.WriteLine(msg);
-
-                if (listResponse != string.Empty)
-                {
-                    Console.WriteLine(listResponse);
-                }
+                Console.WriteLine("Closing App");
+                activeApp = false;
             }
         }
     }
-}
 
-string ReturnList() {
-
-    string response = string.Empty;
-
-    string readJsonString = File.ReadAllText(path);
-
-    List<TaskTracker.Task> deserializeObjs = GetActualJson();
-
-    if (deserializeObjs != null)
+    string ReturnList()
     {
-        foreach (var item in deserializeObjs)
-        {
-            response += $" - {item.Title} - {item.Id} \n";
-        }
-    }
-    else { 
-        return "No tasks available.";
-    }
 
-    return response;
-}
+        string response = string.Empty;
 
-List <TaskTracker.Task> GetActualJson(){
-    List<TaskTracker.Task> json = new List<TaskTracker.Task>();
+        string readJsonString = File.ReadAllText(path);
 
-    string readJsonString = File.ReadAllText(path);
-
-    json = System.Text.Json.JsonSerializer.Deserialize<List<TaskTracker.Task>>(readJsonString);
-
-    return json;
-}
-
-string AddTask(string title) {
-    
-    var cleanTitle = title.Trim().Trim('"');
-
-    var newTask = new TaskTracker.Task
-    {
-        Id = GetNextId(),
-        Title = cleanTitle,
-        Status = "todo"
-    };
-
-    var Tasks = GetActualJson();
-
-    Tasks.Add(newTask);
-
-    string json = System.Text.Json.JsonSerializer.Serialize(Tasks);
-
-    File.WriteAllText(path, json);
-
-    return cleanTitle;
-}
-
-string UpdateTask(int id, string newTitle) {
-    return "";
-}
-string SetState() {
-    return "";
-}
-
-int GetNextId() {
-
-    int response = 0;
-
-    string readJsonString = File.ReadAllText(path);
-
-    if (readJsonString.Length > 0)
-    {
-        var deserializeObjs = System.Text.Json.JsonSerializer.Deserialize<List<TaskTracker.Task>>(readJsonString);
+        List<TaskTracker.Task> deserializeObjs = GetActualJson();
 
         if (deserializeObjs != null)
         {
             foreach (var item in deserializeObjs)
             {
-                response += 1;
+                response += $" - {item.Title} - {item.Id} \n";
             }
         }
         else
         {
-            return 0;
+            return "No tasks available.";
         }
 
+        return response;
     }
 
-    return response;
+    List<TaskTracker.Task> GetActualJson()
+    {
+        List<TaskTracker.Task>? json = new List<TaskTracker.Task>();
+
+        string readJsonString = File.ReadAllText(path);
+
+        json = System.Text.Json.JsonSerializer.Deserialize<List<TaskTracker.Task>>(readJsonString);
+
+        return json ?? new List<TaskTracker.Task>();
+    }
+
+    string AddTask(string title)
+    {
+
+        var cleanTitle = title.Trim().Trim('"');
+
+        var newTask = new TaskTracker.Task
+        {
+            Id = GetNextId(),
+            Title = cleanTitle,
+            Status = "todo"
+        };
+
+        var Tasks = GetActualJson();
+
+        Tasks.Add(newTask);
+
+        string json = System.Text.Json.JsonSerializer.Serialize(Tasks);
+
+        File.WriteAllText(path, json);
+
+        return cleanTitle;
+    }
+
+    string UpdateTask(int id, string newTitle)
+    {
+        return "";
+    }
+    
+    string SetState()
+    {
+        return "";
+    }
+
+    int GetNextId()
+    {
+
+        int response = 0;
+
+        string readJsonString = File.ReadAllText(path);
+
+        if (readJsonString.Length > 0)
+        {
+            var deserializeObjs = System.Text.Json.JsonSerializer.Deserialize<List<TaskTracker.Task>>(readJsonString);
+
+            if (deserializeObjs != null)
+            {
+                foreach (var item in deserializeObjs)
+                {
+                    response += 1;
+                }
+            }
+            else
+            {
+                return 0;
+            }
+
+        }
+
+        return response;
+    }
 }
