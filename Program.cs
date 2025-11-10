@@ -75,7 +75,7 @@ void ReadLineInput()
                     msg = argEx.Message;
                 }
 
-                Console.WriteLine($"Task correctly added : {msg} - ID: {GetNextId()} ");
+                Console.WriteLine($"Task correctly added : {msg}");
             }
 
             if (command == commands[1])
@@ -117,14 +117,56 @@ void ReadLineInput()
 
             if (command == commands[3])
             {
-                Console.WriteLine("Delete task not implemented yet.");
+                string msg = "";
+
+                List<string> args = new List<string>();
+
+                Array.ForEach(input.Split(' '), element => args.Add(element));
+
+                try
+                {
+                    if (args.Count > 1)
+                    {
+                        string secondArg = args[1];
+
+                        if (args.Count > 2)
+                        {
+                            throw new ArgumentOutOfRangeException("Too many arguments provided for deletion.");
+                        }
+                        else {
+                            if (int.TryParse(secondArg, out int res))
+                            {
+                                int taskId = res;
+
+                                msg = DeleteTask(taskId);
+                            }
+                            else { 
+                                throw new ArgumentException("Task ID must be a valid integer.");
+                            }
+                        }
+                    }
+                    else { 
+                        throw new ArgumentNullException("Task ID is required for deletion.");
+                    }
+                }
+                catch (Exception exc)
+                {
+                    msg = exc.Message;
+
+                }
+
+                Console.WriteLine(msg);
             }
 
             if (command == commands[4])
             {
-                Console.WriteLine("Closing App");
+                Console.WriteLine("Closing app...");
                 activeApp = false;
             }
+        }
+        else
+        {
+            Console.WriteLine("Comando no existente");
         }
     }
 
@@ -183,7 +225,7 @@ void ReadLineInput()
 
         File.WriteAllText(path, json);
 
-        return cleanTitle;
+        return $"{newTask.Title} - {newTask.Id}";
     }
 
     string UpdateTask(int id, string newTitle)
@@ -194,6 +236,24 @@ void ReadLineInput()
     string SetState()
     {
         return "";
+    }
+
+    string DeleteTask(int id)
+    {
+
+        var Tasks = GetActualJson();
+
+        var taskToRemove = Tasks.Find(t => t.Id == id);
+
+        if (taskToRemove != null) { 
+            Tasks.Remove(taskToRemove);
+        }
+
+        string json = System.Text.Json.JsonSerializer.Serialize(Tasks);
+
+        File.WriteAllText(path, json);
+
+        return $"Se elimina Task: {id}";
     }
 
     int GetNextId()
@@ -209,10 +269,8 @@ void ReadLineInput()
 
             if (deserializeObjs != null)
             {
-                foreach (var item in deserializeObjs)
-                {
-                    response += 1;
-                }
+                var id = deserializeObjs.Max(t => t.Id);
+                response = id + 1;
             }
             else
             {
