@@ -80,7 +80,7 @@ void ReadLineInput()
 
             if (command == commands[1])
             {
-                string msg = "Listing tasks: \n";
+                string msg = "Listing tasks:";
                 string listResponse = "";
                 try
                 {
@@ -163,6 +163,52 @@ void ReadLineInput()
                 Console.WriteLine("Closing app...");
                 activeApp = false;
             }
+
+            if (command == commands[5]) {
+
+                string msg = "";
+
+                try
+                {
+                    if ((int.TryParse(input.Split(' ')[1], out int id)))
+                    {
+                        msg = MarkTask(id, states[1]);
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Task ID must be a valid integer.");
+                    }
+                }
+                catch (Exception exc)
+                {
+                    msg = exc.Message;
+                }
+
+                Console.WriteLine(msg);
+            }
+
+            if (command == commands[6])
+            {
+                string msg = "";
+
+                try
+                {
+                    if ((int.TryParse(input.Split(' ')[1], out int id)))
+                    {
+                        msg = MarkTask(id, states[2]);
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Task ID must be a valid integer.");
+                    }
+                }
+                catch (Exception exc)
+                {
+                    msg = exc.Message;
+                }
+
+                Console.WriteLine(msg);
+            }
         }
         else
         {
@@ -219,13 +265,16 @@ void ReadLineInput()
 
         var Tasks = GetActualJson();
 
-        Tasks.Add(newTask);
-
-        string json = System.Text.Json.JsonSerializer.Serialize(Tasks);
-
-        File.WriteAllText(path, json);
+        AddTaskToJson(Tasks, newTask);
 
         return $"{newTask.Title} - {newTask.Id}";
+    }
+
+    void AddTaskToJson(List<TaskTracker.Task> Tasks, TaskTracker.Task task)
+    {
+        Tasks.Add(task);
+        string json = System.Text.Json.JsonSerializer.Serialize(Tasks);
+        File.WriteAllText(path, json);
     }
 
     string UpdateTask(int id, string newTitle)
@@ -254,6 +303,34 @@ void ReadLineInput()
         File.WriteAllText(path, json);
 
         return $"Se elimina Task: {id}";
+    }
+
+    string MarkTask(int id, string state)
+    {
+        string msg = string.Empty;
+
+        var Tasks = GetActualJson();
+
+        var TaskToUpdate = Tasks.Find(t => t.Id == id);
+
+        if (TaskToUpdate != null)
+        {
+            var TaskAux = Tasks.Find(t => t.Id == id);
+            
+            TaskToUpdate.Status = state;
+
+            Tasks.Remove(TaskAux);
+
+            AddTaskToJson(Tasks, TaskToUpdate);
+
+            msg = $"Task {id} marked as {state}";
+        }
+        else
+        {
+            msg = $"Task with ID {id} not found.";
+        }
+
+        return msg;
     }
 
     int GetNextId()

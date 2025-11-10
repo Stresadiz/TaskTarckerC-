@@ -1,1 +1,1 @@
-[{"Id":2,"Title":"Setear estado actual a task","Status":"todo"},{"Id":6,"Title":"Se corrige eliminacion de tareas y se le valida","Status":"todo"}]
+[{"Id":6,"Title":"Se corrige eliminacion de tareas y se le valida","Status":"todo"},{"Id":7,"Title":"Agregar funcionalidad in-progress","Status":"in-progress"},{"Id":8,"Title":"Mi primera prueba de cambio de constructor tasks","Status":"in-progress"},{"Id":2,"Title":"Setear estado actual a task","Status":"done"}]
