@@ -80,33 +80,66 @@ void ReadLineInput()
 
             if (command == commands[1])
             {
-                string msg = "Listing tasks:";
+                string msg = string.Empty;
                 string listResponse = "";
                 try
                 {
-                    if (input.Split(' ').Count() > 1)
+                    if (input.Split(' ').Count() > 2)
                     {
-                        throw new ArgumentOutOfRangeException("Listing by state not implemented yet.");
+                        throw new ArgumentOutOfRangeException("Arguments index out of range");
                     }
                     else
                     {
-                        listResponse = ReturnList();
+                        List<string> args = new List<string>();
+                        Array.ForEach(input.Split(' '), element => args.Add(element));
+
+                        if (args.Count > 1)
+                        {
+                            if (states.Contains(args[1]))
+                            {
+                                listResponse = ReturnList(args[1]);
+                                if (listResponse != string.Empty)
+                                {
+                                    msg = $"Listing {args[1]} tasks:";                                
+                                }
+                                else
+                                {
+                                    msg = $"No tasks with state {args[1]} found.";
+                                }
+                            }
+                            else
+                            {
+                                throw new ArgumentException("Invalid state provided for listing tasks.");
+                            }
+                        }
+                        else if (args.Count == 1)
+                        {
+                            listResponse = ReturnList(string.Empty);
+
+                            if (listResponse != string.Empty)
+                            {
+                                msg = "Listing all tasks:";
+                            }
+                            else
+                            {
+                                msg = "No tasks available.";
+                            }
+                        }
+                        else
+                        {
+                            throw new ArgumentException("Invalid state provided for listing tasks.");
+                        }
                     }
                 }
-                catch (ArgumentOutOfRangeException exc)
+                catch (Exception exc)
                 {
                     msg = exc.Message;
-                    return;
-
                 }
                 finally
                 {
                     Console.WriteLine(msg);
 
-                    if (listResponse != string.Empty)
-                    {
-                        Console.WriteLine(listResponse);
-                    }
+                    Console.WriteLine(listResponse);
                 }
             }
 
@@ -164,7 +197,7 @@ void ReadLineInput()
                 activeApp = false;
             }
 
-            if (command == commands[5]) {
+            if (command == commands[5] || command == commands[6]) {
 
                 string msg = "";
 
@@ -172,30 +205,14 @@ void ReadLineInput()
                 {
                     if ((int.TryParse(input.Split(' ')[1], out int id)))
                     {
-                        msg = MarkTask(id, states[1]);
-                    }
-                    else
-                    {
-                        throw new ArgumentException("Task ID must be a valid integer.");
-                    }
-                }
-                catch (Exception exc)
-                {
-                    msg = exc.Message;
-                }
-
-                Console.WriteLine(msg);
-            }
-
-            if (command == commands[6])
-            {
-                string msg = "";
-
-                try
-                {
-                    if ((int.TryParse(input.Split(' ')[1], out int id)))
-                    {
-                        msg = MarkTask(id, states[2]);
+                        if (command == commands[5])
+                        {
+                            msg = MarkTask(id, states[1]);
+                        }
+                        else
+                        {
+                            msg = MarkTask(id, states[2]);
+                        }
                     }
                     else
                     {
@@ -216,7 +233,7 @@ void ReadLineInput()
         }
     }
 
-    string ReturnList()
+    string ReturnList(string state)
     {
 
         string response = string.Empty;
@@ -227,14 +244,27 @@ void ReadLineInput()
 
         if (deserializeObjs != null)
         {
-            foreach (var item in deserializeObjs)
+            if (state == string.Empty)
             {
-                response += $" - {item.Title} - {item.Id} \n";
+                foreach (var item in deserializeObjs)
+                {
+                    response += $"{item.Id} - '{item.Title}' |{item.Status}| \n";
+                }
+            }
+            else
+            {
+                foreach (var item in deserializeObjs)
+                {
+                    if (item.Status == state)
+                    {
+                        response += $"{item.Id} - '{item.Title}' \n";
+                    }
+                }
             }
         }
         else
         {
-            return "No tasks available.";
+            return "";
         }
 
         return response;
@@ -281,28 +311,24 @@ void ReadLineInput()
     {
         return "";
     }
-    
-    string SetState()
-    {
-        return "";
-    }
 
     string DeleteTask(int id)
     {
-
         var Tasks = GetActualJson();
 
         var taskToRemove = Tasks.Find(t => t.Id == id);
 
         if (taskToRemove != null) { 
             Tasks.Remove(taskToRemove);
+
+            string json = System.Text.Json.JsonSerializer.Serialize(Tasks);
+
+            File.WriteAllText(path, json);
+
+            return $"Se elimina Task: {id}";
         }
 
-        string json = System.Text.Json.JsonSerializer.Serialize(Tasks);
-
-        File.WriteAllText(path, json);
-
-        return $"Se elimina Task: {id}";
+        return $"Task con ID {id} no encontrada.";
     }
 
     string MarkTask(int id, string state)
@@ -335,7 +361,6 @@ void ReadLineInput()
 
     int GetNextId()
     {
-
         int response = 0;
 
         string readJsonString = File.ReadAllText(path);
@@ -344,7 +369,7 @@ void ReadLineInput()
         {
             var deserializeObjs = System.Text.Json.JsonSerializer.Deserialize<List<TaskTracker.Task>>(readJsonString);
 
-            if (deserializeObjs != null)
+            if (deserializeObjs != null && deserializeObjs.Count > 0)
             {
                 var id = deserializeObjs.Max(t => t.Id);
                 response = id + 1;
